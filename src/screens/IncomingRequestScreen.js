@@ -10,7 +10,7 @@ export function IncomingRequestScreen({ onAccept, onBack, onDecline, request }) 
       <View style={styles.sectionStack}>
         <View style={styles.summaryPanel}>
           <Text style={styles.summaryTitle}>Request not found</Text>
-          <Text style={styles.cardMeta}>Return home and choose an incoming request again. [to be deleted]</Text>
+          <Text style={styles.cardMeta}>Return home and choose an incoming request again.</Text>
         </View>
         <SecondaryButton label="Back Home" onPress={onBack} />
       </View>
