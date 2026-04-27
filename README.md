@@ -18,6 +18,9 @@
 - Current language: JavaScript.
 - Current testing target: browser preview first.
 - Current data approach: local mock data only.
+- Product terminology: `userSend` is the user who sends a Lock In Request, and `userDeal` is the user who accepts, declines, unlocks, or ends that request.
+- In the actual app, every account can be either `userSend` or `userDeal` depending on the session.
+- Current one-browser mock mode may blur `userSend` and `userDeal` notifications. When two-account interaction is added, notification ownership should be separated clearly.
 - Planned database later: Supabase.
 - Supabase should cover most MVP backend needs, including database, authentication, real-time updates, and security rules.
 - Do not add Docker for now.
@@ -26,6 +29,15 @@
 ### Backend Notes
 
 A custom backend means a separate server owned by this project, such as Node.js/Express or Python/FastAPI, that handles app logic and database requests. For the MVP, Supabase is expected to handle most of that backend responsibility so the app can avoid a separate custom server early on.
+
+---
+
+## Future Two-Account Behavior Notes
+
+- When `userDeal` accepts a Lock In Request, `userDeal` should receive immediate feedback that they accepted.
+- `userSend` should receive a separate popup that the Lock In session has started.
+- The `userSend` popup should have two actions: go into the active Lock In session, or return/stay on Home.
+- This should be implemented when the app has less-blurred two-account interaction, such as real auth, separate users, or a clearer multi-user mock mode.
 
 ---
 
@@ -56,7 +68,8 @@ A custom backend means a separate server owned by this project, such as Node.js/
 - Pending requests are separated into incoming requests that need the current user's action and outgoing requests waiting for a friend.
 - Home stays direct by showing requests, active sessions, and app history on the front page.
 - "lockin now!" is available as a bottom-right floating action button on Home and stays fixed while scrolling.
-- Simulated User 1 accept/decline pop-ups use short status text and disappear automatically after 10 seconds.
+- Accepted requests show a closeable centered "accepted" pop-up.
+- Declined requests show one short status notice instead of duplicate banners.
 - Active session progress uses a simple progress bar plus text for accessibility.
 - User 2 can open an incoming request, view details, accept it, or decline it.
 - Accepted requests leave Pending Requests and move into Active Lock In Sessions.
@@ -77,6 +90,23 @@ A custom backend means a separate server owned by this project, such as Node.js/
 - User 2 does not need wordy notifications for task progress; the progress bar and task status are enough for now.
 - User 2 can unlock apps and end the session once all tasks are done.
 - Ended sessions leave active sessions, move to app history as completed, and save a report entry.
+
+### Phase 5 — Countdown Timer + Auto Expiry
+
+- Active sessions include a countdown timer.
+- Real duration options behave like real time, so 25 minutes means 25 minutes.
+- Create Request includes a 10-second demo timer option for quick browser testing.
+- When the countdown reaches zero, the session expires automatically.
+- Expired sessions leave active sessions, move to app history, save a report entry, return Home, and show a centered "session expired" pop-up.
+
+### Phase 6 — Simulated Friend Response For Outgoing Requests
+
+- Outgoing requests waiting for friends can be opened.
+- Request review reuses the incoming request screen.
+- The request review screen can toggle between viewing as `userSend` and viewing as `userDeal`.
+- Accept and decline actions are only available when viewing as `userDeal`.
+- Accepting an outgoing request creates an active session for the current user.
+- Declining an outgoing request removes it from pending requests, moves it to app history, and shows the current user a declined status.
 
 ---
 

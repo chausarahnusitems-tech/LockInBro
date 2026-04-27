@@ -60,7 +60,7 @@ export function HomeScreen({
       <Section title="Requests Waiting For Friends">
         {outgoingRequests.length > 0 ? (
           outgoingRequests.map((request) => (
-            <View key={request.id} style={styles.card}>
+            <Pressable key={request.id} onPress={() => onOpenRequest(request.id)} style={styles.card}>
               <View style={styles.cardHeader}>
                 <Text style={styles.cardTitle}>{getRequestTitle(request)}</Text>
                 <Text style={styles.cardMeta}>
@@ -73,7 +73,7 @@ export function HomeScreen({
                 <Text style={styles.infoPill}>waiting</Text>
                 <Text style={styles.pill}>{request.duration}</Text>
               </View>
-            </View>
+            </Pressable>
           ))
         ) : (
           <Text style={styles.emptyText}>No outgoing requests waiting for a friend.</Text>
@@ -149,7 +149,7 @@ function getRequestTitle(request) {
 
 function getRequestHint(request) {
   if (request.direction === 'incoming' && request.status === 'pending') {
-    return 'Tap to review as accountability friend.';
+    return 'Tap to review as userDeal.';
   }
 
   if (request.status === 'declined') {

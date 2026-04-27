@@ -1,10 +1,18 @@
 import { Text, View } from 'react-native';
 
-import { PrimaryButton, SecondaryButton } from '../components/Buttons';
+import { OptionButton, PrimaryButton, SecondaryButton } from '../components/Buttons';
 import { Section } from '../components/Section';
 import { styles } from '../styles/styles';
 
-export function IncomingRequestScreen({ onAccept, onBack, onDecline, request }) {
+export function IncomingRequestScreen({
+  currentUser,
+  onAccept,
+  onBack,
+  onDecline,
+  onViewRoleChange,
+  request,
+  viewRole,
+}) {
   if (!request) {
     return (
       <View style={styles.sectionStack}>
@@ -18,16 +26,41 @@ export function IncomingRequestScreen({ onAccept, onBack, onDecline, request }) 
   }
 
   const isPending = request.status === 'pending';
+  const userSend = request.from;
+  const userDeal = request.direction === 'outgoing' ? request.to : currentUser;
+  const userSendViewRole = request.direction === 'outgoing' ? 'currentUser' : 'friend';
+  const userDealViewRole = request.direction === 'outgoing' ? 'friend' : 'currentUser';
+  const isViewingAsUserDeal = viewRole === userDealViewRole;
+  const viewerName = viewRole === userSendViewRole ? userSend : userDeal;
 
   return (
     <View style={styles.sectionStack}>
       <View style={styles.formIntro}>
-        <Text style={styles.formTitle}>Incoming Lock In Request</Text>
-        <Text style={styles.cardMeta}>You are viewing this as the accountability friend.</Text>
+        <Text style={styles.formTitle}>
+          {request.direction === 'outgoing' ? 'Outgoing Lock In Request' : 'Incoming Lock In Request'}
+        </Text>
+        <Text style={styles.cardMeta}>Viewing as {viewerName}</Text>
       </View>
 
+      <Section title="Simulation View">
+        <View style={styles.optionGrid}>
+          <OptionButton
+            active={viewRole === userSendViewRole}
+            label={`userSend: ${userSend}`}
+            onPress={() => onViewRoleChange(userSendViewRole)}
+          />
+          <OptionButton
+            active={viewRole === userDealViewRole}
+            label={`userDeal: ${userDeal}`}
+            onPress={() => onViewRoleChange(userDealViewRole)}
+          />
+        </View>
+      </Section>
+
       <View style={styles.summaryPanel}>
-        <Text style={styles.summaryTitle}>From {request.from}</Text>
+        <Text style={styles.summaryTitle}>From {userSend}</Text>
+        <Text style={styles.cardMeta}>userSend: {userSend}</Text>
+        <Text style={styles.cardMeta}>userDeal: {userDeal}</Text>
         <Text style={styles.cardMeta}>Duration: {request.duration}</Text>
         <Text style={styles.cardMeta}>Status: {request.status}</Text>
         {request.note ? <Text style={styles.cardMeta}>Note: {request.note}</Text> : null}
@@ -51,10 +84,15 @@ export function IncomingRequestScreen({ onAccept, onBack, onDecline, request }) 
         </View>
       </Section>
 
-      {isPending ? (
+      {isPending && isViewingAsUserDeal ? (
         <View style={styles.actionRow}>
           <SecondaryButton label="Decline" onPress={() => onDecline(request.id)} />
           <PrimaryButton label="Accept" onPress={() => onAccept(request)} />
+        </View>
+      ) : isPending ? (
+        <View style={styles.summaryPanel}>
+          <Text style={styles.summaryTitle}>Waiting for userDeal</Text>
+          <Text style={styles.cardMeta}>Switch to userDeal to simulate accepting or declining.</Text>
         </View>
       ) : (
         <SecondaryButton label="Back Home" onPress={onBack} />

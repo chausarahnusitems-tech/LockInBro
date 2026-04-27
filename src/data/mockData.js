@@ -10,7 +10,8 @@ export const mockPendingRequests = [
     from: 'Nadia',
     tasks: ['Review lecture notes', 'Finish practice questions'],
     apps: ['Instagram', 'YouTube'],
-    duration: '45 min',
+    duration: '10 sec demo',
+    durationSeconds: 10,
     note: 'Big exam energy.',
     status: 'pending',
   },
@@ -23,6 +24,7 @@ export const mockPendingRequests = [
     tasks: ['Draft project outline', 'Clean up notes'],
     apps: ['TikTok', 'Discord'],
     duration: '25 min',
+    durationSeconds: 25 * 60,
     note: 'Need a quick sprint.',
     status: 'pending',
   },
@@ -35,4 +37,10 @@ export const mockSessions = [
 
 export const distractionAppOptions = ['Instagram', 'TikTok', 'YouTube', 'Discord'];
 
-export const durationOptions = ['25 min', '45 min', '60 min', '90 min'];
+export const durationOptions = [
+  { label: '10 sec demo', seconds: 10 },
+  { label: '25 min', seconds: 25 * 60 },
+  { label: '45 min', seconds: 45 * 60 },
+  { label: '60 min', seconds: 60 * 60 },
+  { label: '90 min', seconds: 90 * 60 },
+];

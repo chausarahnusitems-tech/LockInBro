@@ -6,6 +6,7 @@ import { Section } from '../components/Section';
 import { styles } from '../styles/styles';
 
 export function ActiveSessionScreen({
+  now,
   onBackHome,
   onEndSession,
   onEmergencyCancel,
@@ -32,13 +33,14 @@ export function ActiveSessionScreen({
   const progressPercent = getProgressPercent(completedTasks, session.tasks.length);
   const isLockedInUser = role === 'lockedInUser';
   const isFinished = session.tasks.length > 0 && completedTasks === session.tasks.length;
+  const secondsRemaining = Math.max(0, Math.ceil((session.expiresAtMs - now) / 1000));
 
   return (
     <View style={styles.sectionStack}>
       <View style={styles.activeSessionPanel}>
         <Text style={styles.statusLabel}>Active session</Text>
         <Text style={styles.statusTitle}>{session.lockedInUser} is locked in</Text>
-        <Text style={styles.statusCopy}>Time left: {session.duration}</Text>
+        <Text style={styles.statusCopy}>Time left: {formatTimeLeft(secondsRemaining)}</Text>
         <Text style={styles.statusCopy}>
           Progress: {completedTasks}/{session.tasks.length} tasks completed
         </Text>
@@ -130,4 +132,11 @@ function getProgressPercent(completedTasks, totalTasks) {
   }
 
   return Math.round((completedTasks / totalTasks) * 100);
+}
+
+function formatTimeLeft(totalSeconds) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
 }

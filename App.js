@@ -24,10 +24,12 @@ export default function App() {
   const [selectedRequestId, setSelectedRequestId] = useState('');
   const [selectedSessionId, setSelectedSessionId] = useState('');
   const [selectedHistoryId, setSelectedHistoryId] = useState('');
+  const [requestViewRole, setRequestViewRole] = useState('currentUser');
   const [sessionViewRole, setSessionViewRole] = useState('friend');
   const [flashMessage, setFlashMessage] = useState('');
   const [userOneNotice, setUserOneNotice] = useState(null);
   const [centerPopup, setCenterPopup] = useState(null);
+  const [now, setNow] = useState(Date.now());
 
   const cleanUsername = username.trim();
   const canContinue = cleanUsername.length >= 2;
@@ -52,6 +54,26 @@ export default function App() {
     return () => clearTimeout(timerId);
   }, [userOneNotice]);
 
+  useEffect(() => {
+    const timerId = setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+
+    return () => clearInterval(timerId);
+  }, []);
+
+  useEffect(() => {
+    const expiredSession = activeSessions.find(
+      (session) => session.expiresAtMs && session.expiresAtMs <= now
+    );
+
+    if (!expiredSession) {
+      return;
+    }
+
+    handleExpireSession(expiredSession);
+  }, [activeSessions, now]);
+
   function handleLogin() {
     if (!canContinue) {
       return;
@@ -68,6 +90,7 @@ export default function App() {
     setSelectedRequestId('');
     setSelectedSessionId('');
     setSelectedHistoryId('');
+    setRequestViewRole('currentUser');
     setSessionViewRole('friend');
     setUserOneNotice(null);
     setCenterPopup(null);
@@ -86,7 +109,10 @@ export default function App() {
   }
 
   function handleOpenRequest(requestId) {
+    const request = pendingRequests.find((currentRequest) => currentRequest.id === requestId);
+
     setSelectedRequestId(requestId);
+    setRequestViewRole(request?.direction === 'incoming' ? 'currentUser' : 'currentUser');
     setFlashMessage('');
     setActiveTab('incoming');
   }
@@ -99,11 +125,13 @@ export default function App() {
   }
 
   function handleAcceptRequest(request) {
+    const lockedInUser = request.direction === 'outgoing' ? request.from : request.from;
+    const accountabilityFriend = request.direction === 'outgoing' ? request.to : currentUser;
     const session = {
       id: `session-${Date.now()}`,
       requestId: request.id,
-      lockedInUser: request.from,
-      accountabilityFriend: currentUser,
+      lockedInUser,
+      accountabilityFriend,
       tasks: request.tasks.map((task, index) => ({
         id: `${request.id}-task-${index}`,
         text: task,
@@ -111,13 +139,16 @@ export default function App() {
       })),
       apps: request.apps,
       duration: request.duration,
+      durationSeconds: request.durationSeconds ?? getDurationSeconds(request.duration),
       note: request.note,
       startedAt: 'Just now',
+      startedAtMs: Date.now(),
+      expiresAtMs: Date.now() + (request.durationSeconds ?? getDurationSeconds(request.duration)) * 1000,
       report: [
         {
           id: `${request.id}-report-started`,
           timestamp: 'Just now',
-          text: `${request.from} started the session.`,
+          text: `${lockedInUser} started the session.`,
         },
       ],
     };
@@ -127,12 +158,9 @@ export default function App() {
     );
     setActiveSessions((currentSessions) => [session, ...currentSessions]);
     setSelectedSessionId(session.id);
-    setSessionViewRole('friend');
-    setUserOneNotice({
-      title: 'accepted',
-      message: 'accepted',
-      tone: 'success',
-    });
+    setSessionViewRole(request.direction === 'outgoing' ? 'lockedInUser' : 'friend');
+    setUserOneNotice(null);
+    setCenterPopup({ title: 'accepted' });
     setFlashMessage('');
     setActiveTab('session');
   }
@@ -197,6 +225,32 @@ export default function App() {
     setActiveTab('home');
   }
 
+  function handleExpireSession(expiredSession) {
+    setActiveSessions((currentSessions) =>
+      currentSessions.filter((session) => session.id !== expiredSession.id)
+    );
+    setAppHistory((currentHistory) => [
+      {
+        id: `history-${Date.now()}`,
+        title: `Expired session with ${expiredSession.lockedInUser}`,
+        result: 'Expired',
+        duration: expiredSession.duration,
+        report: [
+          ...(expiredSession.report ?? []),
+          {
+            id: `report-${Date.now()}`,
+            timestamp: getCurrentTimeLabel(),
+            text: 'Session expired automatically.',
+          },
+        ],
+      },
+      ...currentHistory,
+    ]);
+    setSelectedSessionId('');
+    setCenterPopup({ title: 'session expired' });
+    setActiveTab('home');
+  }
+
   function handleEndSession(sessionId) {
     const completedSession = activeSessions.find((session) => session.id === sessionId);
 
@@ -235,7 +289,10 @@ export default function App() {
       setAppHistory((currentHistory) => [
         {
           id: `history-${Date.now()}`,
-          title: `Declined request from ${declinedRequest.from}`,
+          title:
+            declinedRequest.direction === 'outgoing'
+              ? `Declined request to ${declinedRequest.to}`
+              : `Declined request from ${declinedRequest.from}`,
           result: 'Declined',
           duration: declinedRequest.duration,
           report: [
@@ -254,7 +311,7 @@ export default function App() {
         tone: 'danger',
       });
     }
-    setFlashMessage('Request declined.');
+    setFlashMessage('');
     setActiveTab('home');
   }
 
@@ -340,10 +397,13 @@ export default function App() {
 
           {activeTab === 'incoming' && (
             <IncomingRequestScreen
+              currentUser={currentUser}
               onAccept={handleAcceptRequest}
               onBack={() => setActiveTab('home')}
               onDecline={handleDeclineRequest}
+              onViewRoleChange={setRequestViewRole}
               request={selectedRequest}
+              viewRole={requestViewRole}
             />
           )}
 
@@ -354,6 +414,7 @@ export default function App() {
               onEmergencyCancel={handleEmergencyCancel}
               onRoleChange={setSessionViewRole}
               onToggleTask={handleToggleSessionTask}
+              now={now}
               role={sessionViewRole}
               session={selectedSession}
             />
@@ -402,4 +463,14 @@ function getCurrentTimeLabel() {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+function getDurationSeconds(durationLabel) {
+  const minutes = Number.parseInt(durationLabel, 10);
+
+  if (Number.isNaN(minutes)) {
+    return 25 * 60;
+  }
+
+  return minutes * 60;
 }

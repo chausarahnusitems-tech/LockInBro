@@ -59,7 +59,8 @@ export function CreateRequestScreen({ currentUser, friends, onCancel, onSendRequ
       friendId: selectedFriend.id,
       tasks: tasks.map((task) => task.text),
       apps: selectedApps,
-      duration,
+      duration: duration.label,
+      durationSeconds: duration.seconds,
       note: note.trim(),
       status: 'pending',
     });
@@ -134,9 +135,9 @@ export function CreateRequestScreen({ currentUser, friends, onCancel, onSendRequ
         <View style={styles.optionGrid}>
           {durationOptions.map((option) => (
             <OptionButton
-              active={option === duration}
-              key={option}
-              label={option}
+              active={option.label === duration.label}
+              key={option.label}
+              label={option.label}
               onPress={() => setDuration(option)}
             />
           ))}
@@ -159,7 +160,7 @@ export function CreateRequestScreen({ currentUser, friends, onCancel, onSendRequ
         <Text style={styles.cardMeta}>Friend: {selectedFriend?.displayName ?? 'None selected'}</Text>
         <Text style={styles.cardMeta}>Tasks: {tasks.length}</Text>
         <Text style={styles.cardMeta}>Apps: {selectedApps.join(', ') || 'None selected'}</Text>
-        <Text style={styles.cardMeta}>Duration: {duration}</Text>
+        <Text style={styles.cardMeta}>Duration: {duration.label}</Text>
       </View>
 
       <View style={styles.actionRow}>
